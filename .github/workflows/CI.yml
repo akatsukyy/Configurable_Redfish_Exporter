@@ -9,30 +9,42 @@ on:
 
 jobs:
   build_images:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, label-1]
     permissions:
       contents: read
       packages: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
       with:
-        registry: ghcr.io
-        username: '${{ github.actor }}'
-        password: '${{ secrets.GITHUB_TOKEN }}'
-    - name: Build and Push specific version
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        push: true
-        tags: |
-          ghcr.io/${{ github.repository_owner }}/redfish-exporter:2.x.x
-          ghcr.io/${{ github.repository_owner }}/redfish-exporter:2.0.3
-          ghcr.io/${{ github.repository_owner }}/redfish-exporter:latest
-        build-args: |
-          appVersion=2.0.3
-          maintainer=Freezing
+        fetch-depth: 0
+    
+    - name: Fetch main branch
+      run: git fetch origin main
+
+    - name: Determine base commit
+      id: base
+      run: |
+        BASE_COMMIT=$(git merge-base origin/main ${{ github.sha }})
+        echo "base_commit=$BASE_COMMIT" >> $GITHUB_OUTPUT
+
+    - name: Get changed images and charts
+      run: |
+        BASE_COMMIT=${{ steps.base.outputs.base_commit }}
+        HEAD_COMMIT=${{ github.sha }}
+
+        changed_files=$(git diff $BASE_COMMIT $HEAD_COMMIT --name-only)
+
+        changed_dockerfiles=$(echo "$changed_files" | grep -E "(^|/)Dockerfile$" | sort -u | paste -sd "," -)
+
+        changed_changelogs=$(echo "$changed_files" | grep -iE "(^|/)change\.md$" | sort -u | paste -sd "," -)
+
+        echo "changed_dockerfiles=$changed_dockerfiles" >> $GITHUB_ENV
+        echo "changed_changelogs=$changed_changelogs" >> $GITHUB_ENV
+
+    - name: Output results
+      run: |
+        echo "Changed Dockerfiles: ${{ env.changed_dockerfiles }}"
+        echo "Changed CHANGE.md files: ${{ env.changed_changelogs }}"
+        
+

@@ -6,3 +6,5 @@
 Finally, the first version created with many issues (I think so :D), include:
 - Schemas: Define new data model from old data collected by Redfish API (HPEiLO/iDRAC)
 - Configs: Define metrics collection for prometheus exporter
+
+
