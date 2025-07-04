@@ -9,9 +9,9 @@ on:
 
 jobs:
   build_images:
-    runs-on: [self-hosted, label-1]
+    runs-on: ubuntu-dind
     permissions:
-      contents: read
+      contents: read  
       packages: write
     steps:
     - name: Checkout code
